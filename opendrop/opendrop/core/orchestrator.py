@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -230,7 +230,7 @@ class Orchestrator:
             license_warning=spec.license_warning,
             tags=spec.tags,
             pipeline_tag=spec.pipeline_tag,
-            added_at=datetime.utcnow().isoformat(),
+            added_at=datetime.now(timezone.utc).isoformat(),
             last_used=None,
             server_port=None,
             extra={},

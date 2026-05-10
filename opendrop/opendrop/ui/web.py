@@ -268,9 +268,9 @@ async function sendMessage() {
       const { done, value } = await reader.read();
       if (done) break;
       const chunk = decoder.decode(value);
-      for (const line of chunk.split('\\n')) {
-        if (!line.startsWith('data: ')) continue;
-        const raw = line.slice(6).trim();
+      for (const line of chunk.split('\n')) {
+        if (!line.startsWith('data:')) continue;
+        const raw = line.slice(5).trim();
         if (raw === '[DONE]') break;
         try {
           const obj = JSON.parse(raw);
