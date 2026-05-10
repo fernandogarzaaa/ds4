@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import hashlib
 import threading
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Optional
 from urllib.parse import unquote, urlparse
 
 import httpx
@@ -41,7 +41,7 @@ def _filename_from_url(url: str) -> str:
     return name or "model.bin"
 
 
-def _file_sha256(path: Path, progress_cb: Optional[Callable[[int], None]] = None) -> str:
+def _file_sha256(path: Path, progress_cb: Callable[[int], None] | None = None) -> str:
     h = hashlib.sha256()
     with open(path, "rb") as f:
         while True:
@@ -61,9 +61,9 @@ class DownloadError(RuntimeError):
 def download(
     url: str,
     dest_dir: Path,
-    filename: Optional[str] = None,
-    expected_sha256: Optional[str] = None,
-    token: Optional[str] = None,
+    filename: str | None = None,
+    expected_sha256: str | None = None,
+    token: str | None = None,
     force: bool = False,
     show_progress: bool = True,
 ) -> Path:
@@ -120,12 +120,11 @@ def download(
         )
 
         try:
-            with httpx.stream("GET", url, headers=headers,
-                              follow_redirects=True, timeout=60) as resp:
+            with httpx.stream(
+                "GET", url, headers=headers, follow_redirects=True, timeout=60
+            ) as resp:
                 if resp.status_code not in (200, 206):
-                    raise DownloadError(
-                        f"HTTP {resp.status_code} downloading {url}"
-                    )
+                    raise DownloadError(f"HTTP {resp.status_code} downloading {url}")
                 total = int(resp.headers.get("content-length", 0)) + resume_at
                 mode = "ab" if resume_at and resp.status_code == 206 else "wb"
                 if mode == "wb":
@@ -151,8 +150,7 @@ def download(
             if actual != expected_sha256:
                 dest.unlink(missing_ok=True)
                 raise DownloadError(
-                    f"SHA-256 mismatch for {fname}: "
-                    f"expected {expected_sha256}, got {actual}"
+                    f"SHA-256 mismatch for {fname}: expected {expected_sha256}, got {actual}"
                 )
 
         return dest
@@ -162,7 +160,7 @@ def download_repo_files(
     model_id: str,
     filenames: list[str],
     dest_dir: Path,
-    token: Optional[str] = None,
+    token: str | None = None,
     show_progress: bool = True,
 ) -> list[Path]:
     """Download multiple files from a HuggingFace repo.
@@ -181,7 +179,6 @@ def download_repo_files(
     for fname in filenames:
         url = f"{base}/{fname}"
         paths.append(
-            download(url, dest_dir, filename=fname, token=token,
-                     show_progress=show_progress)
+            download(url, dest_dir, filename=fname, token=token, show_progress=show_progress)
         )
     return paths

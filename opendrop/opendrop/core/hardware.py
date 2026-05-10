@@ -11,10 +11,8 @@ import platform
 import re
 import shutil
 import subprocess
-import sys
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 import psutil
 
@@ -44,14 +42,14 @@ class HardwareProfile:
     usable_vram_mb: int = 0
     cpu_cores: int = 1
     cpu_physical_cores: int = 1
-    cpu_arch: str = ""          # "x86_64", "arm64", …
+    cpu_arch: str = ""  # "x86_64", "arm64", …
     has_avx2: bool = False
     has_avx512: bool = False
-    has_neon: bool = False      # Apple Silicon / ARM
+    has_neon: bool = False  # Apple Silicon / ARM
     ram_mb: int = 0
     free_ram_mb: int = 0
     ssd_est_mb_per_s: int = 0  # rough estimate, 0 = unknown
-    os_name: str = ""           # "Darwin", "Linux", "Windows"
+    os_name: str = ""  # "Darwin", "Linux", "Windows"
 
     # Derived helpers
     @property
@@ -85,7 +83,8 @@ class HardwareProfile:
             + (" AVX2" if self.has_avx2 else "")
             + (" AVX512" if self.has_avx512 else "")
             + (" NEON" if self.has_neon else ""),
-            f"RAM         : {self.ram_mb / 1024:.1f} GB total, {self.free_ram_mb / 1024:.1f} GB free",
+            f"RAM         : {self.ram_mb / 1024:.1f} GB total,"
+            f" {self.free_ram_mb / 1024:.1f} GB free",
             f"GPU         : {self.gpu.name or self.gpu.kind.value}",
         ]
         if self.gpu.unified:
@@ -102,34 +101,36 @@ class HardwareProfile:
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-def _run(cmd: list[str], timeout: int = 5) -> Optional[str]:
+
+def _run(cmd: list[str], timeout: int = 5) -> str | None:
     """Run a command and return stdout, or None on failure."""
     try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=timeout, check=False
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, check=False)
         return result.stdout.strip() if result.returncode == 0 else None
     except Exception:
         return None
 
 
-def _probe_apple_silicon() -> Optional[GPUInfo]:
+def _probe_apple_silicon() -> GPUInfo | None:
     if platform.system() != "Darwin":
         return None
     cpu_brand = _run(["sysctl", "-n", "machdep.cpu.brand_string"])
-    if cpu_brand and ("Apple" in cpu_brand or "M1" in cpu_brand or "M2" in cpu_brand
-                      or "M3" in cpu_brand or "M4" in cpu_brand):
+    if cpu_brand and (
+        "Apple" in cpu_brand
+        or "M1" in cpu_brand
+        or "M2" in cpu_brand
+        or "M3" in cpu_brand
+        or "M4" in cpu_brand
+    ):
         name = cpu_brand.split("Apple ")[-1] if "Apple " in cpu_brand else cpu_brand
         return GPUInfo(kind=GPUKind.APPLE_SILICON, name=name, unified=True)
     return None
 
 
-def _probe_nvidia() -> Optional[GPUInfo]:
+def _probe_nvidia() -> GPUInfo | None:
     if not shutil.which("nvidia-smi"):
         return None
-    out = _run(
-        ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader,nounits"]
-    )
+    out = _run(["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader,nounits"])
     if not out:
         return None
     first_line = out.splitlines()[0]
@@ -144,7 +145,7 @@ def _probe_nvidia() -> Optional[GPUInfo]:
     return GPUInfo(kind=GPUKind.NVIDIA, name=name, vram_mb=vram_mb)
 
 
-def _probe_amd() -> Optional[GPUInfo]:
+def _probe_amd() -> GPUInfo | None:
     for tool in ("rocm-smi", "rocminfo"):
         if not shutil.which(tool):
             continue
@@ -155,13 +156,16 @@ def _probe_amd() -> Optional[GPUInfo]:
                 for line in out.splitlines():
                     m = re.search(r"(\d+)", line)
                     if m:
-                        return GPUInfo(kind=GPUKind.AMD, name="AMD GPU",
-                                       vram_mb=int(m.group(1)) // (1024 * 1024))
+                        return GPUInfo(
+                            kind=GPUKind.AMD,
+                            name="AMD GPU",
+                            vram_mb=int(m.group(1)) // (1024 * 1024),
+                        )
         return GPUInfo(kind=GPUKind.AMD, name="AMD GPU (ROCm)")
     return None
 
 
-def _probe_intel_arc() -> Optional[GPUInfo]:
+def _probe_intel_arc() -> GPUInfo | None:
     # Intel GPU detection via clinfo or sycl-ls
     if shutil.which("sycl-ls"):
         out = _run(["sycl-ls"])
@@ -186,8 +190,7 @@ def _probe_cpu_features() -> tuple[bool, bool, bool]:
         except OSError:
             pass
     elif platform.system() == "Darwin":
-        out = _run(["sysctl", "-n", "machdep.cpu.features",
-                    "machdep.cpu.leaf7_features"])
+        out = _run(["sysctl", "-n", "machdep.cpu.features", "machdep.cpu.leaf7_features"])
         flags_str = out or ""
 
     flags_str = flags_str.lower()
@@ -214,6 +217,7 @@ def _estimate_ssd_speed() -> int:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def detect_hardware() -> HardwareProfile:
     """Run hardware probes and return a :class:`HardwareProfile`."""

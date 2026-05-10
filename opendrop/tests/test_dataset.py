@@ -2,28 +2,27 @@
 
 from __future__ import annotations
 
-import json
 import csv
+import json
 from pathlib import Path
 
 import pytest
 
 from opendrop.training.dataset import (
     DatasetError,
-    dataset_stats,
-    load_dataset,
-    _normalize_alpaca,
-    _normalize_sharegpt,
-    _normalize_prompt_completion,
     _is_alpaca,
     _is_sharegpt,
-    _is_messages,
+    _normalize_alpaca,
+    _normalize_prompt_completion,
+    _normalize_sharegpt,
+    dataset_stats,
+    load_dataset,
 )
-
 
 # ---------------------------------------------------------------------------
 # Normalizer unit tests
 # ---------------------------------------------------------------------------
+
 
 class TestNormalizers:
     def test_alpaca_detection(self):
@@ -72,6 +71,7 @@ class TestNormalizers:
 # File loaders
 # ---------------------------------------------------------------------------
 
+
 class TestLoadJSONL:
     def test_load_alpaca_jsonl(self, tmp_path: Path):
         data = [
@@ -86,10 +86,12 @@ class TestLoadJSONL:
 
     def test_load_sharegpt_jsonl(self, tmp_path: Path):
         data = [
-            {"conversations": [
-                {"from": "human", "value": "Hi"},
-                {"from": "gpt", "value": "Hello"},
-            ]}
+            {
+                "conversations": [
+                    {"from": "human", "value": "Hi"},
+                    {"from": "gpt", "value": "Hello"},
+                ]
+            }
         ]
         f = tmp_path / "data.jsonl"
         f.write_text(json.dumps(data[0]))
@@ -156,9 +158,15 @@ class TestLoadText:
 
 class TestDatasetStats:
     def test_stats_all_chat(self, tmp_path: Path):
-        data = [{"messages": [{"role": "user", "content": "Hi"},
-                               {"role": "assistant", "content": "Hello"}]}
-                for _ in range(5)]
+        data = [
+            {
+                "messages": [
+                    {"role": "user", "content": "Hi"},
+                    {"role": "assistant", "content": "Hello"},
+                ]
+            }
+            for _ in range(5)
+        ]
         stats = dataset_stats(data)
         assert stats["total"] == 5
         assert stats["chat_format"] == 5

@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -66,16 +65,29 @@ class TestChatCompletions:
         assert r.status_code == 404
 
     def test_missing_model_file_returns_503(self, client: TestClient, mock_registry):
-        from opendrop.core.registry import ModelRecord
         from datetime import datetime, timezone
 
+        from opendrop.core.registry import ModelRecord
+
         rec = ModelRecord(
-            id="test-model", model_id="org/model", source_url="",
-            display_name="test-model", architecture="llama", params_b=7.0,
-            quant="Q4_K_M", format="gguf", path="/nonexistent/model.gguf",
-            size_bytes=0, license_id="apache-2.0", license_warning="",
-            tags=[], pipeline_tag="", added_at=datetime.now(timezone.utc).isoformat(),
-            last_used=None, server_port=None, extra={},
+            id="test-model",
+            model_id="org/model",
+            source_url="",
+            display_name="test-model",
+            architecture="llama",
+            params_b=7.0,
+            quant="Q4_K_M",
+            format="gguf",
+            path="/nonexistent/model.gguf",
+            size_bytes=0,
+            license_id="apache-2.0",
+            license_warning="",
+            tags=[],
+            pipeline_tag="",
+            added_at=datetime.now(timezone.utc).isoformat(),
+            last_used=None,
+            server_port=None,
+            extra={},
         )
         mock_registry.get_model.return_value = rec
 
@@ -91,9 +103,9 @@ class TestChatCompletions:
 
 class TestWebUI:
     def test_web_ui_served(self, client: TestClient):
-        from opendrop.ui.web import mount_web_ui
-        from fastapi import FastAPI
+
         from opendrop.inference.server import create_app
+        from opendrop.ui.web import mount_web_ui
 
         app = create_app()
         mount_web_ui(app)

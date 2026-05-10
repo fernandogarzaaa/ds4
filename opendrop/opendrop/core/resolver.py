@@ -16,11 +16,9 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 from urllib.parse import urlparse
 
 import httpx
-
 
 HF_API = "https://huggingface.co/api"
 HF_BASE = "https://huggingface.co"
@@ -69,27 +67,27 @@ class ModelSpec:
     """Everything OpenDrop knows about a model before downloading."""
 
     # Source
-    source_url: str           # original input
-    model_id: str             # "org/name"
+    source_url: str  # original input
+    model_id: str  # "org/name"
     is_local: bool = False
 
     # Metadata
-    model_name: str = ""      # display name
-    architecture: str = ""    # e.g. "llama", "mistral", "qwen2"
-    params_b: float = 0.0     # parameter count in billions
+    model_name: str = ""  # display name
+    architecture: str = ""  # e.g. "llama", "mistral", "qwen2"
+    params_b: float = 0.0  # parameter count in billions
     license_id: str = ""
     license_ok: bool = True
     license_warning: str = ""
     tags: list[str] = field(default_factory=list)
-    pipeline_tag: str = ""    # "text-generation", "fill-mask", …
+    pipeline_tag: str = ""  # "text-generation", "fill-mask", …
 
     # Download options
     variants: list[FileVariant] = field(default_factory=list)
     # Direct single-file download (set when URL points to a specific file)
-    direct_file: Optional[FileVariant] = None
+    direct_file: FileVariant | None = None
 
     # Local paths (set when source is local)
-    local_path: Optional[Path] = None
+    local_path: Path | None = None
 
     def best_gguf_variants(self) -> list[FileVariant]:
         """Return all GGUF variants, sorted by file size descending."""
@@ -108,6 +106,7 @@ class ModelSpec:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _parse_quant_from_filename(name: str) -> str:
     """Try to extract a quant label from a GGUF filename."""
@@ -151,7 +150,7 @@ def _is_hf_url(url: str) -> bool:
     return parsed.netloc in ("huggingface.co", "hf.co")
 
 
-def _extract_hf_model_id(url: str) -> Optional[str]:
+def _extract_hf_model_id(url: str) -> str | None:
     """Extract 'org/model' from a HF URL or return None."""
     parsed = urlparse(url)
     path = parsed.path.lstrip("/")
@@ -199,7 +198,8 @@ def _params_from_name(name: str) -> float:
 # HuggingFace API fetch helpers (synchronous for CLI simplicity)
 # ---------------------------------------------------------------------------
 
-def _hf_model_info(model_id: str, token: Optional[str] = None) -> dict:
+
+def _hf_model_info(model_id: str, token: str | None = None) -> dict:
     """Fetch model metadata from the HF API."""
     headers = {}
     if token:
@@ -211,7 +211,7 @@ def _hf_model_info(model_id: str, token: Optional[str] = None) -> dict:
         return r.json()
 
 
-def _hf_model_files(model_id: str, token: Optional[str] = None) -> list[dict]:
+def _hf_model_files(model_id: str, token: str | None = None) -> list[dict]:
     """Fetch the file listing for a HF model repo."""
     headers = {}
     if token:
@@ -237,13 +237,15 @@ def _build_variants_from_tree(model_id: str, tree: list[dict]) -> list[FileVaria
         if not (is_gguf or is_safetensors):
             continue
         url = f"{HF_BASE}/{model_id}/resolve/main/{name}"
-        variants.append(FileVariant(
-            filename=name,
-            url=url,
-            size_bytes=size,
-            is_gguf=is_gguf,
-            quant_label=_parse_quant_from_filename(name) if is_gguf else "",
-        ))
+        variants.append(
+            FileVariant(
+                filename=name,
+                url=url,
+                size_bytes=size,
+                is_gguf=is_gguf,
+                quant_label=_parse_quant_from_filename(name) if is_gguf else "",
+            )
+        )
     return variants
 
 
@@ -251,7 +253,8 @@ def _build_variants_from_tree(model_id: str, tree: list[dict]) -> list[FileVaria
 # Public API
 # ---------------------------------------------------------------------------
 
-def resolve(source: str, token: Optional[str] = None) -> ModelSpec:
+
+def resolve(source: str, token: str | None = None) -> ModelSpec:
     """Resolve *source* (URL, HF model ID, or local path) to a :class:`ModelSpec`.
 
     Args:
@@ -298,8 +301,7 @@ def resolve(source: str, token: Optional[str] = None) -> ModelSpec:
             "or a local file/directory path."
         )
 
-    spec = ModelSpec(source_url=source, model_id=model_id,
-                     model_name=model_id.split("/")[-1])
+    spec = ModelSpec(source_url=source, model_id=model_id, model_name=model_id.split("/")[-1])
     _enrich_from_hf(spec, model_id, token)
     return spec
 
@@ -324,7 +326,7 @@ def _resolve_local(path: Path) -> ModelSpec:
     return spec
 
 
-def _enrich_from_hf(spec: ModelSpec, model_id: str, token: Optional[str]) -> None:
+def _enrich_from_hf(spec: ModelSpec, model_id: str, token: str | None) -> None:
     """Fetch HF metadata and file tree, populating spec in-place."""
     try:
         info = _hf_model_info(model_id, token)
@@ -354,8 +356,11 @@ def _enrich_from_hf(spec: ModelSpec, model_id: str, token: Optional[str]) -> Non
         if not spec.params_b:
             # Try safetensors_info
             si = info.get("safetensors") or {}
-            total = sum(si.get("total", {}).values() if isinstance(si.get("total"), dict)
-                        else [si.get("total", 0)])
+            total = sum(
+                si.get("total", {}).values()
+                if isinstance(si.get("total"), dict)
+                else [si.get("total", 0)]
+            )
             if total:
                 spec.params_b = total / 1e9
 

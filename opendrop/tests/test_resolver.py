@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from opendrop.core.resolver import (
-    FileVariant,
-    ModelSpec,
     _check_license,
     _extract_hf_model_id,
     _is_direct_file_url,
@@ -63,7 +61,10 @@ class TestHelpers:
 
     def test_extract_hf_model_id(self):
         assert _extract_hf_model_id("https://huggingface.co/org/model") == "org/model"
-        assert _extract_hf_model_id("https://huggingface.co/org/model/resolve/main/f.gguf") == "org/model"
+        assert (
+            _extract_hf_model_id("https://huggingface.co/org/model/resolve/main/f.gguf")
+            == "org/model"
+        )
 
     def test_is_direct_file_url(self):
         assert _is_direct_file_url("https://hf.co/x/y/resolve/main/m.gguf") is True
@@ -96,8 +97,8 @@ class TestResolveHF:
         }
         tree = [
             {"type": "file", "path": "model.Q4_K_M.gguf", "size": 4_500_000_000},
-            {"type": "file", "path": "model.Q8_0.gguf",   "size": 9_000_000_000},
-            {"type": "file", "path": "config.json",        "size": 1024},
+            {"type": "file", "path": "model.Q8_0.gguf", "size": 9_000_000_000},
+            {"type": "file", "path": "config.json", "size": 1024},
         ]
         return info, tree
 

@@ -4,23 +4,24 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
-from unittest.mock import MagicMock, patch, mock_open
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from opendrop.core.downloader import (
     DownloadError,
-    _filename_from_url,
     _file_sha256,
+    _filename_from_url,
     download,
 )
 
 
 class TestFilenameFromUrl:
     def test_simple_gguf(self):
-        assert _filename_from_url(
-            "https://huggingface.co/org/model/resolve/main/model.Q4_K_M.gguf"
-        ) == "model.Q4_K_M.gguf"
+        assert (
+            _filename_from_url("https://huggingface.co/org/model/resolve/main/model.Q4_K_M.gguf")
+            == "model.Q4_K_M.gguf"
+        )
 
     def test_with_query_string(self):
         name = _filename_from_url("https://example.com/file.bin?token=abc")

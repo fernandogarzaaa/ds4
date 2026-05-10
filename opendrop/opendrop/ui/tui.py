@@ -11,20 +11,17 @@ Launch: opendrop tui
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import ClassVar
 
 from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
-from textual.reactive import reactive
 from textual.widgets import (
     DataTable,
     Footer,
     Header,
     Label,
-    Log,
     RichLog,
     Static,
 )
@@ -34,10 +31,10 @@ from opendrop.core.hardware import HardwareProfile, detect_hardware
 from opendrop.core.registry import ModelRecord, Registry
 from opendrop.inference.llamacpp import get_manager
 
-
 # ---------------------------------------------------------------------------
 # Hardware panel
 # ---------------------------------------------------------------------------
+
 
 class HardwarePanel(Static):
     """Displays the hardware profile summary."""
@@ -56,22 +53,25 @@ class HardwarePanel(Static):
         self._profile = profile
 
     def on_mount(self) -> None:
-        self.update(
-            Text.from_markup(
-                f"[bold cyan]Hardware[/bold cyan]\n{self._profile.summary()}"
-            )
-        )
+        self.update(Text.from_markup(f"[bold cyan]Hardware[/bold cyan]\n{self._profile.summary()}"))
 
 
 # ---------------------------------------------------------------------------
 # Model table
 # ---------------------------------------------------------------------------
 
+
 class ModelTable(DataTable):
     """Interactive table of registered models."""
 
     COLUMNS: ClassVar[list[str]] = [
-        "ID", "Name", "Arch", "Params", "Quant", "Size", "Status",
+        "ID",
+        "Name",
+        "Arch",
+        "Params",
+        "Quant",
+        "Size",
+        "Status",
     ]
 
     def __init__(self, records: list[ModelRecord], running_ids: set[str]) -> None:
@@ -101,6 +101,7 @@ class ModelTable(DataTable):
 # ---------------------------------------------------------------------------
 # Main App
 # ---------------------------------------------------------------------------
+
 
 class OpenDropTUI(App):
     """OpenDrop terminal dashboard."""
@@ -170,9 +171,7 @@ class OpenDropTUI(App):
         else:
             lines = [Text("Active servers:", style="bold cyan")]
             for rec_id, srv in running.items():
-                lines.append(
-                    Text(f"  {rec_id}  →  {srv.base_url}", style="green")
-                )
+                lines.append(Text(f"  {rec_id}  →  {srv.base_url}", style="green"))
             content = Text("\n").join(lines)
         panel = Static(content)
         panel.styles.border = ("round", "green")

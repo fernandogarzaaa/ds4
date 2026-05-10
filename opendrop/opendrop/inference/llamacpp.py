@@ -16,7 +16,6 @@ import subprocess
 import threading
 import time
 from pathlib import Path
-from typing import Optional
 
 from rich.console import Console
 
@@ -37,7 +36,7 @@ _COMMON_DIRS = [
 ]
 
 
-def find_binary(names: list[str]) -> Optional[Path]:
+def find_binary(names: list[str]) -> Path | None:
     """Search PATH and common directories for one of the given binary names."""
     for name in names:
         found = shutil.which(name)
@@ -51,11 +50,11 @@ def find_binary(names: list[str]) -> Optional[Path]:
     return None
 
 
-def find_server_binary() -> Optional[Path]:
+def find_server_binary() -> Path | None:
     return find_binary(_SERVER_NAMES)
 
 
-def find_quantize_binary() -> Optional[Path]:
+def find_quantize_binary() -> Path | None:
     return find_binary(_QUANTIZE_NAMES)
 
 
@@ -104,6 +103,7 @@ def _release_port(port: int) -> None:
 # Server instance
 # ---------------------------------------------------------------------------
 
+
 class LlamaCppServer:
     """Manages one llama-server subprocess."""
 
@@ -115,8 +115,8 @@ class LlamaCppServer:
         gpu_layers: int = -1,
         parallel: int = 1,
         flash_attn: bool = True,
-        extra_args: Optional[list[str]] = None,
-        binary: Optional[Path] = None,
+        extra_args: list[str] | None = None,
+        binary: Path | None = None,
     ) -> None:
         self.gguf_path = gguf_path
         self.port = port
@@ -126,18 +126,24 @@ class LlamaCppServer:
         self.flash_attn = flash_attn
         self.extra_args = extra_args or []
         self._binary = binary or require_server_binary()
-        self._proc: Optional[subprocess.Popen] = None
-        self._log_thread: Optional[threading.Thread] = None
+        self._proc: subprocess.Popen | None = None
+        self._log_thread: threading.Thread | None = None
 
     def _build_cmd(self) -> list[str]:
         cmd = [
             str(self._binary),
-            "--model", str(self.gguf_path),
-            "--port", str(self.port),
-            "--host", "127.0.0.1",
-            "--ctx-size", str(self.ctx_size),
-            "--n-gpu-layers", str(self.gpu_layers),
-            "--parallel", str(self.parallel),
+            "--model",
+            str(self.gguf_path),
+            "--port",
+            str(self.port),
+            "--host",
+            "127.0.0.1",
+            "--ctx-size",
+            str(self.ctx_size),
+            "--n-gpu-layers",
+            str(self.gpu_layers),
+            "--parallel",
+            str(self.parallel),
         ]
         if self.flash_attn:
             cmd.append("--flash-attn")
@@ -155,9 +161,7 @@ class LlamaCppServer:
             stderr=subprocess.STDOUT,
             text=True,
         )
-        self._log_thread = threading.Thread(
-            target=self._stream_logs, daemon=True
-        )
+        self._log_thread = threading.Thread(target=self._stream_logs, daemon=True)
         self._log_thread.start()
         self._wait_healthy(timeout)
 
@@ -170,6 +174,7 @@ class LlamaCppServer:
         url = f"http://127.0.0.1:{self.port}/health"
         deadline = time.time() + timeout
         import httpx
+
         while time.time() < deadline:
             if self._proc and self._proc.poll() is not None:
                 raise RuntimeError(
@@ -178,9 +183,7 @@ class LlamaCppServer:
             try:
                 r = httpx.get(url, timeout=2)
                 if r.status_code == 200:
-                    console.print(
-                        f"[green]✓ llama-server ready on port {self.port}[/green]"
-                    )
+                    console.print(f"[green]✓ llama-server ready on port {self.port}[/green]")
                     return
             except Exception:
                 pass
@@ -217,6 +220,7 @@ class LlamaCppServer:
 # Multi-server manager
 # ---------------------------------------------------------------------------
 
+
 class ServerManager:
     """Manages a pool of LlamaCppServer instances keyed by model record ID."""
 
@@ -232,7 +236,7 @@ class ServerManager:
         gpu_layers: int = -1,
         parallel: int = 1,
         flash_attn: bool = True,
-        port: Optional[int] = None,
+        port: int | None = None,
     ) -> LlamaCppServer:
         with self._lock:
             if model_record_id in self._servers:
@@ -266,7 +270,7 @@ class ServerManager:
                 srv.stop()
             self._servers.clear()
 
-    def get_server(self, model_record_id: str) -> Optional[LlamaCppServer]:
+    def get_server(self, model_record_id: str) -> LlamaCppServer | None:
         return self._servers.get(model_record_id)
 
     def running_models(self) -> dict[str, LlamaCppServer]:

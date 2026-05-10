@@ -17,8 +17,7 @@ from __future__ import annotations
 import csv
 import json
 from pathlib import Path
-from typing import Any, Optional
-
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Types
@@ -35,6 +34,7 @@ class DatasetError(ValueError):
 # ---------------------------------------------------------------------------
 # Format detection
 # ---------------------------------------------------------------------------
+
 
 def _is_alpaca(sample: dict) -> bool:
     return "instruction" in sample and "output" in sample
@@ -59,6 +59,7 @@ def _is_instruction_response(sample: dict) -> bool:
 # ---------------------------------------------------------------------------
 # Normalizers → standard {messages: [...]} format
 # ---------------------------------------------------------------------------
+
 
 def _normalize_alpaca(sample: dict) -> Sample:
     instruction = sample["instruction"].strip()
@@ -127,6 +128,7 @@ def _normalize_sample(sample: dict) -> Sample:
 # Loaders
 # ---------------------------------------------------------------------------
 
+
 def _load_jsonl(path: Path) -> Dataset:
     samples: Dataset = []
     with open(path, encoding="utf-8") as f:
@@ -175,8 +177,7 @@ def _load_hf_dataset(dataset_id: str, split: str = "train") -> Dataset:
         from datasets import load_dataset  # type: ignore[import]
     except ImportError as exc:
         raise DatasetError(
-            "HuggingFace 'datasets' package not installed. "
-            "Run: pip install opendrop[training]"
+            "HuggingFace 'datasets' package not installed. Run: pip install opendrop[training]"
         ) from exc
 
     ds = load_dataset(dataset_id, split=split)
@@ -187,10 +188,11 @@ def _load_hf_dataset(dataset_id: str, split: str = "train") -> Dataset:
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def load_dataset(
     source: str,
     split: str = "train",
-    max_samples: Optional[int] = None,
+    max_samples: int | None = None,
 ) -> Dataset:
     """Load a dataset from *source* and return normalized samples.
 
@@ -244,9 +246,7 @@ def format_sample_for_training(sample: Sample, tokenizer: Any) -> str:
             )
         except Exception:
             # Fall back to simple concatenation
-            return "\n".join(
-                f"{m['role'].upper()}: {m['content']}" for m in sample["messages"]
-            )
+            return "\n".join(f"{m['role'].upper()}: {m['content']}" for m in sample["messages"])
     return sample.get("text", "")
 
 
@@ -255,9 +255,7 @@ def dataset_stats(data: Dataset) -> dict:
     n = len(data)
     chat = sum(1 for s in data if "messages" in s)
     text_only = n - chat
-    avg_turns = (
-        sum(len(s["messages"]) for s in data if "messages" in s) / chat if chat else 0
-    )
+    avg_turns = sum(len(s["messages"]) for s in data if "messages" in s) / chat if chat else 0
     return {
         "total": n,
         "chat_format": chat,
