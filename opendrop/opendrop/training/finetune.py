@@ -381,9 +381,11 @@ def fine_tune(
             torch_dtype=torch.float16,
             device_map="auto",
         )
-        texts = [
-            formatted for s in data if (formatted := format_sample_for_training(s, tok)).strip()
-        ]
+        texts = []
+        for s in data:
+            formatted = format_sample_for_training(s, tok)
+            if formatted.strip():
+                texts.append(formatted)
         hf_ds = HFDataset.from_dict({"text": texts})
         train_args = TrainingArguments(
             output_dir=str(output_dir),
