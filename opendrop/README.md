@@ -2,9 +2,10 @@
 
 > Universal open-weight local AI aggregator — drop a model link, run it locally.
 
-[![Beta](https://img.shields.io/badge/status-beta-orange)](https://github.com/fernandogarzaaa/ds4/tree/main/opendrop)
+[![Beta](https://img.shields.io/badge/status-beta-orange)](https://github.com/fernandogarzaaa/OpenDrop)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![CI](https://github.com/fernandogarzaaa/OpenDrop/actions/workflows/ci.yml/badge.svg)](https://github.com/fernandogarzaaa/OpenDrop/actions/workflows/ci.yml)
 
 ---
 
@@ -238,7 +239,7 @@ gradient_accumulation = 4
 OpenDrop is built on the shoulders of:
 
 - **[llama.cpp](https://github.com/ggml-org/llama.cpp)** — the inference engine that makes local AI possible
-- **[ds4.c](../ds4.c)** — the inspiration for end-to-end local model quality
+- **[ds4.c](https://github.com/fernandogarzaaa/ds4)** — the inspiration for end-to-end local model quality
 - **[HuggingFace Hub](https://huggingface.co/)** — the open-model ecosystem
 - **[Textual](https://github.com/Textualize/textual)** — the TUI framework
 
@@ -246,4 +247,4 @@ OpenDrop is built on the shoulders of:
 
 ## License
 
-MIT — see [LICENSE](../LICENSE)
+MIT — see [LICENSE](LICENSE)
